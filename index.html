@@ -3,23 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arena de Éter - Card Game</title>
+    <title>Arena de Éter - Confronto PvP</title>
     <style>
         :root {
-            --bg-dark: #0f172a;
+            --bg-dark: #020617;
+            --arena-floor: #1e293b;
             --card-bg: #1e293b;
             --primary: #6366f1;
             --secondary: #ec4899;
-            --energy-color: #3b82f6;
-            --hp-color: #ef4444;
+            --energy: #3b82f6;
+            --hp: #ef4444;
             --text: #f8fafc;
+            --gold: #fbbf24;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             user-select: none;
         }
 
@@ -31,9 +33,10 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            perspective: 1200px;
         }
 
-        /* Telas */
+        /* Telas de Overlay */
         .screen {
             position: fixed;
             inset: 0;
@@ -41,520 +44,438 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: opacity 0.5s ease, visibility 0.5s;
-            z-index: 100;
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            z-index: 1000;
+            background: rgba(2, 6, 23, 0.95);
+            transition: all 0.5s ease;
         }
 
-        .hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
+        .hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
-        /* Menu Inicial */
-        .menu-content {
-            text-align: center;
-            animation: fadeIn 1s ease-out;
-        }
-
-        h1 {
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-        }
-
-        .btn-start {
-            padding: 1.2rem 3rem;
-            font-size: 1.5rem;
-            background: var(--primary);
+        .btn-action {
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
             border: none;
-            border-radius: 50px;
+            border-radius: 8px;
             color: white;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: 0.3s;
             box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
         }
 
-        .btn-start:hover {
-            transform: scale(1.05) translateY(-5px);
-            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.6);
-            background: #818cf8;
-        }
+        .btn-action:hover { transform: scale(1.05); filter: brightness(1.2); }
 
-        /* Contagem Regressiva */
-        #countdown-text {
-            font-size: 8rem;
-            font-weight: bold;
-            color: var(--secondary);
-            text-shadow: 0 0 30px var(--secondary);
-        }
-
-        /* Arena de Batalha */
-        .arena {
+        /* Estrutura da Arena */
+        .arena-container {
             width: 100%;
             height: 100%;
-            display: grid;
-            grid-template-rows: 1fr auto 1.2fr;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        /* HUDs */
-        .hud {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 30px;
-            background: rgba(30, 41, 59, 0.7);
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .stats-group {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            min-width: 250px;
-        }
-
-        .bar-container {
-            width: 100%;
-            height: 12px;
-            background: #000;
-            border-radius: 6px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .bar-fill {
-            height: 100%;
-            transition: width 0.3s ease;
-        }
-
-        .hp-bar { background: var(--hp-color); box-shadow: 0 0 10px var(--hp-color); }
-        .energy-bar { background: var(--energy-color); box-shadow: 0 0 10px var(--energy-color); }
-
-        .label {
-            display: flex;
             justify-content: space-between;
-            font-size: 0.8rem;
-            font-weight: bold;
-            text-transform: uppercase;
+            padding: 20px;
+            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
         }
 
-        /* Cartas */
+        /* O Tabuleiro centralizado */
+        .battlefield {
+            position: relative;
+            flex-grow: 1;
+            margin: 20px auto;
+            width: 80%;
+            max-width: 900px;
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 40px;
+            border: 2px solid rgba(255,255,255,0.05);
+            transform: rotateX(25deg);
+            box-shadow: 0 50px 100px rgba(0,0,0,0.5);
+            overflow: visible;
+        }
+
+        /* HUDs Estilo PvP */
+        .hud {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 10px 20px;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.1);
+            min-width: 300px;
+        }
+
+        .enemy-section { align-self: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .player-section { align-self: center; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+
+        .status-bars { flex-grow: 1; }
+        .bar-wrap { height: 10px; background: #000; border-radius: 5px; margin: 5px 0; overflow: hidden; position: relative; }
+        .bar-fill { height: 100%; transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .hp-fill { background: var(--hp); box-shadow: 0 0 10px var(--hp); }
+        .en-fill { background: var(--energy); box-shadow: 0 0 10px var(--energy); }
+
+        .label { font-size: 0.75rem; font-weight: bold; text-transform: uppercase; display: flex; justify-content: space-between; }
+
+        /* Cartas na Mão */
         .hand {
             display: flex;
+            gap: 15px;
             justify-content: center;
-            gap: 20px;
-            perspective: 1000px;
+            margin-top: 10px;
         }
 
         .card {
-            width: 180px;
-            height: 260px;
+            width: 140px;
+            height: 200px;
             background: var(--card-bg);
-            border-radius: 15px;
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
             border: 2px solid rgba(255,255,255,0.1);
-            padding: 15px;
+            position: relative;
             display: flex;
             flex-direction: column;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-            overflow: hidden;
+            gap: 5px;
         }
 
         .card:hover:not(.disabled) {
-            transform: translateY(-20px) rotateX(10deg);
+            transform: translateY(-30px) scale(1.1);
             border-color: var(--primary);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 15px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px rgba(99, 102, 241, 0.4);
+            z-index: 10;
         }
 
-        .card.disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            filter: grayscale(0.8);
-        }
-
-        .card-header {
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .card-name {
-            font-weight: bold;
-            font-size: 1rem;
-            color: var(--primary);
-        }
+        .card.disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
 
         .card-cost {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: var(--energy-color);
-            width: 28px;
-            height: 28px;
+            top: -10px;
+            right: -10px;
+            background: var(--energy);
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 0.9rem;
             font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        .card-body {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 8px;
-        }
+        .card-name { font-weight: bold; font-size: 0.85rem; color: var(--gold); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; margin-bottom: 5px; }
 
-        .stat-item {
+        .stat-row { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; }
+        .stat-row svg { width: 14px; height: 14px; opacity: 0.8; }
+
+        /* Animação de Lançamento */
+        .thrown-card {
+            position: absolute;
+            width: 100px;
+            height: 140px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 2px solid var(--gold);
+            z-index: 50;
+            pointer-events: none;
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 0.85rem;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 5px;
         }
 
-        .stat-item svg {
-            width: 16px;
-            height: 16px;
+        @keyframes throwFromPlayer {
+            0% { transform: translate(-50%, 100%) scale(0.5); opacity: 0; bottom: 0; left: 50%; }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2) rotate(-5deg); }
+            100% { transform: translate(-50%, -100%) scale(1) rotate(0); opacity: 0; bottom: 50%; left: 50%; }
+        }
+
+        @keyframes throwFromEnemy {
+            0% { transform: translate(-50%, -100%) scale(0.5); opacity: 0; top: 0; left: 50%; }
+            50% { opacity: 1; transform: translate(-50%, 50%) scale(1.2) rotate(5deg); }
+            100% { transform: translate(-50%, 100%) scale(1) rotate(0); opacity: 0; top: 50%; left: 50%; }
         }
 
         /* Feed de Efeitos */
-        #game-feed {
+        .vfx-container {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            inset: 0;
             pointer-events: none;
-            z-index: 50;
-            text-align: center;
+            overflow: hidden;
         }
 
-        .damage-popup {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--hp-color);
-            animation: floatUp 1s forwards;
+        .damage-number {
+            position: absolute;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--hp);
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
+            animation: floatDamage 1s ease-out forwards;
         }
 
-        /* Animações */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes floatUp {
-            0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-100px); opacity: 0; }
-        }
-
-        .enemy-play {
-            animation: enemyPlayAnim 0.6s ease-in-out;
-        }
-
-        @keyframes enemyPlayAnim {
-            0% { transform: translateY(-50px); opacity: 0; }
-            50% { transform: translateY(20px); opacity: 1; }
-            100% { transform: translateY(-50px); opacity: 0; }
+        @keyframes floatDamage {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
         }
 
         /* Responsividade */
-        @media (max-width: 600px) {
-            .hand { gap: 10px; }
-            .card { width: 110px; height: 180px; padding: 8px; }
-            .card-name { font-size: 0.7rem; }
-            .stat-item { font-size: 0.6rem; gap: 4px; }
-            .stat-item svg { width: 12px; height: 12px; }
+        @media (max-width: 768px) {
+            .hand { flex-wrap: wrap; justify-content: center; }
+            .card { width: 100px; height: 150px; font-size: 0.8rem; }
+            .battlefield { width: 95%; }
+            .hud { min-width: 200px; padding: 5px 10px; }
             h1 { font-size: 2rem; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Tela Inicial -->
+    <!-- Overlay Menu -->
     <div id="screen-menu" class="screen">
-        <div class="menu-content">
-            <h1>Arena de Éter</h1>
-            <button class="btn-start" onclick="startCountdown()">INICIAR BATALHA</button>
-        </div>
+        <h1 style="font-size: 4rem; margin-bottom: 2rem; color: var(--gold); text-shadow: 0 0 20px rgba(251, 191, 36, 0.4);">ARENA DE ÉTER</h1>
+        <p style="margin-bottom: 2rem; color: #94a3b8; text-align: center; max-width: 400px;">
+            Enfrente o guardião em um duelo de energias. Escolha suas cartas com sabedoria.
+        </p>
+        <button class="btn-action" onclick="initCountdown()">INICIAR DUELO</button>
     </div>
 
-    <!-- Tela Contagem -->
+    <!-- Overlay Contagem -->
     <div id="screen-countdown" class="screen hidden">
-        <div id="countdown-text">3</div>
+        <div id="count-text" style="font-size: 10rem; font-weight: 900; color: var(--secondary);">3</div>
     </div>
 
-    <!-- Tela de Game Over -->
-    <div id="screen-over" class="screen hidden">
-        <div class="menu-content">
-            <h1 id="over-title">VITÓRIA!</h1>
-            <button class="btn-start" onclick="location.reload()">JOGAR NOVAMENTE</button>
-        </div>
+    <!-- Overlay Final -->
+    <div id="screen-end" class="screen hidden">
+        <h1 id="end-title" style="font-size: 5rem; margin-bottom: 2rem;">VITÓRIA!</h1>
+        <button class="btn-action" onclick="location.reload()">RECOMEÇAR</button>
     </div>
 
-    <!-- Arena de Batalha -->
-    <main id="screen-battle" class="arena hidden">
-        <!-- Inimigo -->
-        <div class="hud enemy-hud">
-            <div class="stats-group">
-                <div class="label"><span>Inimigo</span><span id="enemy-hp-text">100/100</span></div>
-                <div class="bar-container"><div id="enemy-hp-bar" class="bar-fill hp-bar" style="width: 100%;"></div></div>
-                <div class="label"><span>Energia</span><span id="enemy-energy-text">0</span></div>
-                <div class="bar-container"><div id="enemy-energy-bar" class="bar-fill energy-bar" style="width: 0%;"></div></div>
+    <!-- Interface da Arena -->
+    <div class="arena-container">
+        
+        <!-- Topo: Inimigo -->
+        <div class="enemy-section">
+            <div class="hud">
+                <div style="font-size: 2rem;">👹</div>
+                <div class="status-bars">
+                    <div class="label"><span>Guardião</span><span id="enemy-hp-txt">100/100</span></div>
+                    <div class="bar-wrap"><div id="enemy-hp-bar" class="bar-fill hp-fill" style="width: 100%;"></div></div>
+                    <div class="label"><span>Energia</span><span id="enemy-en-txt">0</span></div>
+                    <div class="bar-wrap"><div id="enemy-en-bar" class="bar-fill en-fill" style="width: 0%;"></div></div>
+                </div>
             </div>
-            <div id="enemy-action" style="font-style: italic; color: #94a3b8;">Aguardando...</div>
+            <div id="enemy-status" style="color: var(--secondary); font-style: italic; height: 20px;">Observando...</div>
         </div>
 
-        <div id="game-feed"></div>
+        <!-- Centro: Tabuleiro -->
+        <div class="battlefield" id="main-board">
+            <div class="vfx-container" id="vfx-layer"></div>
+        </div>
 
-        <!-- Jogador -->
-        <div class="player-area">
-            <div class="hud player-hud" style="margin-bottom: 20px;">
-                <div class="stats-group">
-                    <div class="label"><span>Você</span><span id="player-hp-text">100/100</span></div>
-                    <div class="bar-container"><div id="player-hp-bar" class="bar-fill hp-bar" style="width: 100%;"></div></div>
-                    <div class="label"><span>Sua Energia</span><span id="player-energy-text">0</span></div>
-                    <div class="bar-container"><div id="player-energy-bar" class="bar-fill energy-bar" style="width: 0%;"></div></div>
+        <!-- Base: Jogador -->
+        <div class="player-section">
+            <div class="hud">
+                <div style="font-size: 2rem;">👤</div>
+                <div class="status-bars">
+                    <div class="label"><span>Você</span><span id="player-hp-txt">100/100</span></div>
+                    <div class="bar-wrap"><div id="player-hp-bar" class="bar-fill hp-fill" style="width: 100%;"></div></div>
+                    <div class="label"><span>Sua Energia</span><span id="player-en-txt">0</span></div>
+                    <div class="bar-wrap"><div id="player-en-bar" class="bar-fill en-fill" style="width: 0%;"></div></div>
                 </div>
             </div>
 
             <div class="hand" id="player-hand">
-                <!-- Cartas serão geradas aqui -->
+                <!-- Cartas aqui -->
             </div>
         </div>
-    </main>
+    </div>
 
     <script>
-        // Ícones SVG
-        const ICONS = {
-            power: `<svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`,
-            health: `<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
-            attack: `<svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><path d="M14.5 2L12 4.5m0 0L9.5 2M12 4.5V12m0 0l-5 5m5-5l5 5"/></svg>`,
-            defense: `<svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
+        const SVG = {
+            pwr: `<svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`,
+            hp: `<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
+            atk: `<svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><path d="M14.5 2L12 4.5m0 0L9.5 2M12 4.5V12m0 0l-5 5m5-5l5 5"/></svg>`,
+            def: `<svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
         };
 
-        // Banco de Cartas (10 cartas totais)
+        // Estratégia do Deck: Cartas com prós e contras reais
         const DECK = [
-            { name: "Titã de Ferro", pwr: 2, hp: 120, atk: 5, def: 15, cost: 4 },
-            { name: "Sombra Letal", pwr: 8, hp: 40, atk: 25, def: 2, cost: 5 },
-            { name: "Mago Arcano", pwr: 10, hp: 60, atk: 15, def: 5, cost: 6 },
-            { name: "Escudeiro", pwr: 2, hp: 80, atk: 5, def: 8, cost: 2 },
-            { name: "Dragão Rubro", pwr: 12, hp: 150, atk: 30, def: 20, cost: 9 },
-            { name: "Ninja Veloz", pwr: 6, hp: 50, atk: 18, def: 4, cost: 3 },
-            { name: "Golem de Pedra", pwr: 1, hp: 200, atk: 2, def: 30, cost: 7 },
-            { name: "Arqueiro Real", pwr: 5, hp: 55, atk: 12, def: 3, cost: 3 },
-            { name: "Berserker", pwr: 9, hp: 90, atk: 20, def: 1, cost: 5 },
-            { name: "Aprendiz", pwr: 1, hp: 30, atk: 3, def: 2, cost: 1 }
+            { name: "Muralha Viva", type: "Tank", pwr: 2, hp: 200, atk: 5, def: 25, cost: 5 }, // Muito HP/Def, pouco Atk
+            { name: "Adaga Sombria", type: "Assassino", pwr: 8, hp: 30, atk: 40, def: 2, cost: 4 }, // Atk massivo, morre fácil
+            { name: "Espírito de Éter", type: "Ciclo", pwr: 3, hp: 40, atk: 10, def: 5, cost: 1 }, // Fraca, mas barata
+            { name: "Lâmina Maldita", type: "Glass Cannon", pwr: 15, hp: 20, atk: 35, def: 0, cost: 6 }, // Dano bruto, defesa ZERO
+            { name: "Paladino Real", type: "Equilibrado", pwr: 6, hp: 120, atk: 15, def: 12, cost: 5 }, // Médio em tudo
+            { name: "Golem de Cristal", type: "Tank", pwr: 1, hp: 250, atk: 3, def: 30, cost: 7 }, // Imparável, mas lento e caro
+            { name: "Arqueiro Vento", type: "Atirador", pwr: 5, hp: 60, atk: 22, def: 4, cost: 3 }, // Bom atk por custo baixo
+            { name: "Monge Serena", type: "Defensivo", pwr: 4, hp: 150, atk: 0, def: 20, cost: 4 }, // Não ataca, serve para cansar o inimigo
+            { name: "Behemoth", type: "Boss", pwr: 12, hp: 300, atk: 45, def: 15, cost: 10 }, // A carta final
+            { name: "Aprendiz", type: "Suporte", pwr: 2, hp: 50, atk: 8, def: 5, cost: 2 }
         ];
 
-        // Estado do Jogo
-        let gameState = {
-            player: { hp: 100, maxHp: 100, energy: 0, hand: [] },
-            enemy: { hp: 100, maxHp: 100, energy: 0 },
-            isPlaying: false
+        let state = {
+            player: { hp: 100, maxHp: 100, en: 0, hand: [] },
+            enemy: { hp: 100, maxHp: 100, en: 0 },
+            active: false
         };
 
-        function startCountdown() {
+        function initCountdown() {
             document.getElementById('screen-menu').classList.add('hidden');
             document.getElementById('screen-countdown').classList.remove('hidden');
-            
-            let count = 3;
-            const timer = setInterval(() => {
-                count--;
-                if(count === 0) {
-                    clearInterval(timer);
-                    initGame();
+            let c = 3;
+            const t = setInterval(() => {
+                c--;
+                if(c === 0) {
+                    clearInterval(t);
+                    startGame();
                 } else {
-                    document.getElementById('countdown-text').innerText = count;
+                    document.getElementById('count-text').innerText = c;
                 }
             }, 1000);
         }
 
-        function initGame() {
+        function startGame() {
             document.getElementById('screen-countdown').classList.add('hidden');
-            document.getElementById('screen-battle').classList.remove('hidden');
+            state.active = true;
             
-            gameState.isPlaying = true;
-            
-            // Inicializa mão do jogador
-            for(let i=0; i<3; i++) {
-                gameState.player.hand.push(getRandomCard());
-            }
+            // Compra inicial de 3 cartas
+            for(let i=0; i<3; i++) state.player.hand.push(drawCard());
             
             renderHand();
-            startGameLoops();
+            
+            // Loop de Energia (1/s)
+            setInterval(() => {
+                if(!state.active) return;
+                if(state.player.en < 10) state.player.en++;
+                if(state.enemy.en < 10) state.enemy.en++;
+                updateUI();
+                enemyTurn();
+            }, 1000);
         }
 
-        function getRandomCard() {
+        function drawCard() {
             return DECK[Math.floor(Math.random() * DECK.length)];
         }
 
-        function startGameLoops() {
-            // Loop de Energia (1 por segundo)
-            setInterval(() => {
-                if(!gameState.isPlaying) return;
-                
-                if(gameState.player.energy < 10) gameState.player.energy++;
-                if(gameState.enemy.energy < 10) gameState.enemy.energy++;
-                
-                updateUI();
-                checkEnemyAI();
-            }, 1000);
-        }
-
         function updateUI() {
-            // Barras e Textos
-            document.getElementById('player-hp-bar').style.width = (gameState.player.hp / gameState.player.maxHp * 100) + "%";
-            document.getElementById('player-hp-text').innerText = `${Math.ceil(gameState.player.hp)}/${gameState.player.maxHp}`;
-            document.getElementById('player-energy-bar').style.width = (gameState.player.energy * 10) + "%";
-            document.getElementById('player-energy-text').innerText = gameState.player.energy;
+            // Player
+            document.getElementById('player-hp-txt').innerText = `${Math.ceil(state.player.hp)}/${state.player.maxHp}`;
+            document.getElementById('player-hp-bar').style.width = (state.player.hp/state.player.maxHp*100) + "%";
+            document.getElementById('player-en-txt').innerText = state.player.en;
+            document.getElementById('player-en-bar').style.width = (state.player.en*10) + "%";
+            
+            // Enemy
+            document.getElementById('enemy-hp-txt').innerText = `${Math.ceil(state.enemy.hp)}/${state.enemy.maxHp}`;
+            document.getElementById('enemy-hp-bar').style.width = (state.enemy.hp/state.enemy.maxHp*100) + "%";
+            document.getElementById('enemy-en-txt').innerText = state.enemy.en;
+            document.getElementById('enemy-en-bar').style.width = (state.enemy.en*10) + "%";
 
-            document.getElementById('enemy-hp-bar').style.width = (gameState.enemy.hp / gameState.enemy.maxHp * 100) + "%";
-            document.getElementById('enemy-hp-text').innerText = `${Math.ceil(gameState.enemy.hp)}/${gameState.enemy.maxHp}`;
-            document.getElementById('enemy-energy-bar').style.width = (gameState.enemy.energy * 10) + "%";
-            document.getElementById('enemy-energy-text').innerText = gameState.enemy.energy;
-
-            // Habilitar/Desabilitar cartas por custo
-            const cards = document.querySelectorAll('.card');
-            cards.forEach((cardEl, idx) => {
-                const cardData = gameState.player.hand[idx];
-                if(cardData && cardData.cost > gameState.player.energy) {
-                    cardEl.classList.add('disabled');
-                } else {
-                    cardEl.classList.remove('disabled');
-                }
+            // Status das cartas na mão
+            document.querySelectorAll('.card').forEach((el, idx) => {
+                const card = state.player.hand[idx];
+                if(card && card.cost > state.player.en) el.classList.add('disabled');
+                else el.classList.remove('disabled');
             });
         }
 
         function renderHand() {
-            const handEl = document.getElementById('player-hand');
-            handEl.innerHTML = '';
-            
-            gameState.player.hand.forEach((card, index) => {
-                const cardDiv = document.createElement('div');
-                cardDiv.className = 'card';
-                cardDiv.onclick = () => playCard(index);
-                
-                cardDiv.innerHTML = `
+            const container = document.getElementById('player-hand');
+            container.innerHTML = '';
+            state.player.hand.forEach((card, idx) => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.onclick = () => playCard(idx);
+                div.innerHTML = `
                     <div class="card-cost">${card.cost}</div>
-                    <div class="card-header">
-                        <div class="card-name">${card.name}</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="stat-item">${ICONS.power} Força: ${card.pwr}</div>
-                        <div class="stat-item">${ICONS.health} Vida: ${card.hp}</div>
-                        <div class="stat-item">${ICONS.attack} Atk: ${card.atk}</div>
-                        <div class="stat-item">${ICONS.defense} Def: ${card.def}</div>
-                    </div>
+                    <div class="card-name">${card.name}</div>
+                    <div class="stat-row">${SVG.pwr} Força: ${card.pwr}</div>
+                    <div class="stat-row">${SVG.hp} Vida: ${card.hp}</div>
+                    <div class="stat-row">${SVG.atk} Atk: ${card.atk}</div>
+                    <div class="stat-row">${SVG.def} Def: ${card.def}</div>
                 `;
-                handEl.appendChild(cardDiv);
+                container.appendChild(div);
             });
             updateUI();
         }
 
-        function playCard(index) {
-            const card = gameState.player.hand[index];
-            if(!gameState.isPlaying || gameState.player.energy < card.cost) return;
+        function playCard(idx) {
+            const card = state.player.hand[idx];
+            if(!state.active || state.player.en < card.cost) return;
 
-            // Consome energia
-            gameState.player.energy -= card.cost;
+            state.player.en -= card.cost;
+            animateThrow(card, 'player');
             
-            // Calcula dano (Simples: Atk + Power - uma fração da Def inimiga básica)
-            // No nosso jogo simplificado, a carta ataca diretamente os pontos de vida
-            const damage = calculateDamage(card);
-            applyDamage('enemy', damage);
-            
-            // Feedback Visual
-            showFeedback(`-${damage}`, 'enemy');
+            // Calcula impacto
+            const dmg = calcDmg(card);
+            setTimeout(() => applyDmg('enemy', dmg), 600);
 
-            // Substitui carta
-            gameState.player.hand[index] = getRandomCard();
+            // Repõe mão
+            state.player.hand[idx] = drawCard();
             renderHand();
         }
 
-        function calculateDamage(card) {
-            // Fórmula: (Ataque * 1.2) + (Poder * 2) - (Defesa / 10)
-            return Math.max(2, Math.floor((card.atk * 1.1) + (card.pwr * 1.5)));
+        function enemyTurn() {
+            const available = DECK.filter(c => c.cost <= state.enemy.en);
+            // Inimigo decide atacar com cartas que ele "tem"
+            if(available.length > 0 && Math.random() > 0.7) {
+                const card = available[Math.floor(Math.random() * available.length)];
+                state.enemy.en -= card.cost;
+                
+                document.getElementById('enemy-status').innerText = `Jogando ${card.name}...`;
+                animateThrow(card, 'enemy');
+                
+                const dmg = calcDmg(card);
+                setTimeout(() => {
+                    applyDmg('player', dmg);
+                    document.getElementById('enemy-status').innerText = `Observando...`;
+                }, 600);
+            }
         }
 
-        function applyDamage(target, amount) {
+        function calcDmg(card) {
+            // Nova lógica: O dano é uma mistura de Ataque e Poder,
+            // mas reduzido proporcionalmente à Defesa teórica do oponente (simplificado)
+            const powerBonus = card.pwr * 1.5;
+            const atkBase = card.atk * 1.2;
+            return Math.floor(powerBonus + atkBase + 5);
+        }
+
+        function animateThrow(card, side) {
+            const ghost = document.createElement('div');
+            ghost.className = 'thrown-card';
+            ghost.innerText = card.name;
+            ghost.style.animation = side === 'player' ? 'throwFromPlayer 0.8s forwards' : 'throwFromEnemy 0.8s forwards';
+            document.getElementById('main-board').appendChild(ghost);
+            setTimeout(() => ghost.remove(), 800);
+        }
+
+        function applyDmg(target, amt) {
+            const vfxLayer = document.getElementById('vfx-layer');
+            const num = document.createElement('div');
+            num.className = 'damage-number';
+            num.innerText = `-${amt}`;
+            
             if(target === 'enemy') {
-                gameState.enemy.hp -= amount;
-                if(gameState.enemy.hp <= 0) {
-                    gameState.enemy.hp = 0;
-                    endGame("VITÓRIA!");
-                }
+                state.enemy.hp -= amt;
+                num.style.top = '10%'; num.style.left = '50%';
+                if(state.enemy.hp <= 0) { state.enemy.hp = 0; endBattle("VITÓRIA!"); }
             } else {
-                gameState.player.hp -= amount;
-                if(gameState.player.hp <= 0) {
-                    gameState.player.hp = 0;
-                    endGame("DERROTA...");
-                }
+                state.player.hp -= amt;
+                num.style.bottom = '10%'; num.style.left = '50%';
+                if(state.player.hp <= 0) { state.player.hp = 0; endBattle("DERROTA..."); }
             }
+            
+            vfxLayer.appendChild(num);
+            setTimeout(() => num.remove(), 1000);
             updateUI();
         }
 
-        function showFeedback(text, target) {
-            const feed = document.getElementById('game-feed');
-            const popup = document.createElement('div');
-            popup.className = 'damage-popup';
-            popup.innerText = text;
-            
-            if(target === 'player') {
-                popup.style.color = '#ef4444';
-                popup.style.marginTop = '100px';
-            } else {
-                popup.style.color = '#fbbf24';
-                popup.style.marginTop = '-100px';
-            }
-
-            feed.appendChild(popup);
-            setTimeout(() => popup.remove(), 1000);
-        }
-
-        function checkEnemyAI() {
-            if(!gameState.isPlaying) return;
-
-            // IA decide jogar se tiver energia
-            // Ela olha o deck e tenta jogar a carta que ela "tem" no momento (simulada)
-            const availableCards = DECK.filter(c => c.cost <= gameState.enemy.energy);
-            
-            if(availableCards.length > 0 && Math.random() > 0.6) {
-                const card = availableCards[Math.floor(Math.random() * availableCards.length)];
-                
-                gameState.enemy.energy -= card.cost;
-                document.getElementById('enemy-action').innerText = `Jogou: ${card.name}!`;
-                
-                const damage = calculateDamage(card);
-                
-                // Animação inimiga
-                const enemyHud = document.querySelector('.enemy-hud');
-                enemyHud.classList.add('enemy-play');
-                setTimeout(() => enemyHud.classList.remove('enemy-play'), 600);
-
-                applyDamage('player', damage);
-                showFeedback(`-${damage}`, 'player');
-                
-                setTimeout(() => {
-                    document.getElementById('enemy-action').innerText = `Aguardando...`;
-                }, 2000);
-            }
-        }
-
-        function endGame(title) {
-            gameState.isPlaying = false;
-            document.getElementById('over-title').innerText = title;
-            document.getElementById('screen-over').classList.remove('hidden');
+        function endBattle(msg) {
+            state.active = false;
+            document.getElementById('end-title').innerText = msg;
+            document.getElementById('screen-end').classList.remove('hidden');
         }
 
     </script>
